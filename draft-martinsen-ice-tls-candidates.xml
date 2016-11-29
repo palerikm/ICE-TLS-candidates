@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd">
+<?rfc toc="yes"?>
+<?rfc tocompact="yes"?>
+<?rfc tocdepth="3"?>
+<?rfc tocindent="yes"?>
+<?rfc symrefs="yes"?>
+<?rfc sortrefs="yes"?>
+<?rfc comments="yes"?>
+<?rfc inline="yes"?>
+<?rfc compact="yes"?>
+<?rfc subcompact="no"?>
+<rfc category="std" docName="draft-martinsen-ice-tls-candidates-latest"
+     ipr="trust200902">
+  <front>
+    <title abbrev="ICE TLS">TLS Candidates for ICE</title>
+    <author fullname="Paal-Erik Martinsen" initials="P.E" surname="Martinsen">
+      <organization abbrev="Cisco">Cisco Systems, Inc.</organization>
+      <address>
+        <postal>
+          <street>Philip Pedersens Vei 22</street>
+          <city>Lysaker</city>
+          <region>Akershus</region>
+          <code>1325</code>
+          <country>Norway</country>
+        </postal>
+        <email>palmarti@cisco.com</email>
+      </address>
+    </author>
+    <author fullname="Nathan Buckles" initials="N." surname="Buckles">
+      <organization abbrev="Cisco">Cisco Systems, Inc.</organization>
+      <address>
+        <postal>
+          <street>2250 East President George Bush Highway</street>
+          <city>Richardson</city>
+          <region>Texas</region>
+          <code>75082-3550</code>
+          <country>USA</country>
+        </postal>
+        <email>nbuckles@cisco.com</email>
+      </address>
+    </author>
+        
+    <date/>
+
+    <workgroup>ICE</workgroup>
+
+    <abstract>
+      <t>
+        TODO: Write
+      </t>
+    </abstract>
+  </front>
+
+  <middle>
+    <section anchor="introduction" title="Introduction">
+      <t>
+        In use-cases where media is terminated by a public reachable
+        server it is desirable to be able to negotiate a TLS
+        connection in addition to UDP as described in ICEbis <xref
+        target="I-D.ietf-ice-rfc5245bis"/> and TCP as described in
+        ICE-TCP <xref target="RFC6544"/>. This will increase the
+        chances of successfully traversing any firewall between the
+        client and the public server.
+      </t>
+      <t>
+        Due to the problems associated with p2p connections and TCP
+        (Synchronously opening up the two necessary pinholes at two
+        different NAT/FWs), this specification focuses on the use case
+        where one side is publicly reachable and runs ICE-lite.
+      </t>
+      
+    </section>
+  
+    <section anchor="notation" title="Notational Conventions">
+      <t>
+        The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
+        NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and
+        "OPTIONAL" in this document are to be interpreted as described
+        in <xref target="RFC2119"></xref>.
+      </t>
+      <t>
+        This specification uses terminology defined in <xref
+        target="I-D.ietf-ice-rfc5245bis">ICEbis</xref>.
+      </t>
+    </section>
+
+    <section anchor="overview_of_operations" title="Overview of Operations">
+      <t>
+        ICE to performs connectivity checks between clients and
+        servers.  ICE candidates are exchanged via SDP and
+        connectivity checks are performed on each candidate pair.
+        Typically the client implements a full ICE stack and the
+        server implements a ICE lite stack.  The client is in the ICE
+        controlling role, so the client has ultimate control over
+        which candidate pair is selected.  The client controls the
+        candidate selection by setting PRIORITY and USE-CANDIDATE
+        attributes within the STUN binding requests.  This follows the
+        ICE specification with the following exceptions:
+      </t>
+      <t>
+        <list>
+          <t>
+            If no STUN binding request is received with USE-CANDIDATE
+            set then the STUN binding request with the highest
+            priority is used.
+          </t>
+          <t>
+            If a STUN binding request without USE-CANDIDATE is chosen
+            as the active candidate, then a later STUN binding request
+            with USE-CANDIDATE or with a higher PRIORITY will change
+            the active candidate.
+          </t>
+          <t>
+            If a STUN binding request with USE-CANDIDATE is chosen as
+            the active candidate, then a later STUN binding request
+            with USE-CANDIDATE and a higher PRIORITY will change the
+            active candidate.
+          </t>
+        </list>
+      </t>
+      <t>
+        These exceptions are in place to handle scenarios such as
+        mobile network change, which was handled in the original ICE
+        spec by initiating an ICE restart that we wish to avoid.
+        There are in progress draft documents to address this within
+        IETF as well.
+      </t>  
+    </section>
+
+    <section anchor="ice-tls-candidates" title="ICE-TLS-Candidates">      
+      <t>
+        The grammar for ICE candidates in SDP is described in ICEbis
+        and ICE-TCP.  For TLS candidates, we update the
+        grammar as follows:
+        <figure>
+          <artwork align="left"><![CDATA[
+          transport = “UDP” / “TCP” / “TLS” / transport-extension
+          ]]></artwork>
+        </figure> 
+        Candidate priority is calculated using the standard formula
+        with UDP having higher priority than TCP or TLS, and TCP
+        having higher priority than TLS. 
+      </t>
+      <t>
+        Example ICE candidates from a client:
+        <figure>
+          <artwork align="left"><![CDATA[
+          
+   a=candidate:1 1 UDP 2113933823 10.19.1.236 20124 typ HOST
+   a=candidate:2 1 TCP 2113933567 10.19.1.236 20000 typ HOST
+   a=candidate:3 1 TLS 2113933322 10.19.1.236 20000 typ HOST \
+   fingerprint sha-1;XX:YY:ZZ
+   52:A7:60:90:B2:3E:79:43:08:77:F0:80:C6:14:E2:1B:87:16:B3:B1
+   ]]></artwork>
+        </figure> 
+        
+        Example ICE candidates from a server:
+        <figure>
+          <artwork align="left"><![CDATA[
+          
+  a=candidate:0 1 UDP 2130706431 23.253.251.168 33434 typ host
+  a=candidate:8 1 TCP 1962934271 23.253.251.168 33434 typ host tcptype
+  passive a=candidate:16 1 TLS 1459376510 23.253.251.168 443 typ host
+  \ tcptype passive fingerprint sha-1;XX:YY:ZZ ]]></artwork>
+        </figure> 
+        Note that the server TCP and TLS candidates are always marked
+        as passive indicating that the client always initiates the TCP
+        connection.  For TLS candidates both the client and server
+        MUST include the fingerprint attribute that has the following
+        syntax largely borrowed from Comedia over TLS in SDP <xref
+        target="RFC4572"/>.
+        
+        <figure>
+          <artwork align="left"><![CDATA[
+          extension-att-name = “fingerprint”
+          extension-att-value = hash-func “;” fingerprint
+          hash-func =  "sha-1" / "sha-224" / "sha-256" / token                              
+          fingerprint =  2UHEX *(":" 2UHEX)                              
+          ]]></artwork>
+        </figure> 
+        The certificates exchanged as part of the TLS handshake should
+        be validated against the given fingerprint as a means of
+        identifying the remote TLS participant.
+      </t>
+    </section>
+    
+    <section anchor="sending-packets" title="Sending Packets">
+      <t>
+        Various types of packets (RTP, RTCP, SRTP, SRTCP, STUN, DTLS,
+        BFCP) are sent over the different transport types in different
+        ways.
+      </t>  
+      <t>
+        When using UDP transport all packets except BFCP are sent
+        directly over UDP as individual UDP datagrams.  BFCP packets
+        are sent directly over UDP when the BFCP m-line is not DTLS
+        enabled.  BFCP packets are sent as DTLS payload when the
+        m-line is DTLS enabled.
+      </t>
+      <t>
+        When using TCP transport all packets except BFCP are sent
+        directly over the TCP connection using RTP and RTCP over
+        Connection-Oriented Transport <xref target="RFC4571"/>
+        framing.  BFCP packets are sent using this framing when the
+        BFCP m-line is not DTLS enabled.  BFCP packets are sent as
+        DTLS payload when the m-line is DTLS enabled.
+      </t>
+      <t>
+        When using TLS transport all packets except BFCP are sent as
+        TLS payload using rfc4571 framing.  BFCP packets are sent
+        using rfc4571 framing when the BFCP m-line is not DTLS
+        enabled.  BFCP packets are sent as DTLS payload when the
+        m-line is DTLS enabled.
+      </t>
+      <t>
+        In the case of SRTP/SRTCP and TLS, each packet will be double
+        encrypted.  On the encryption side the SRTP/SRTCP encryption
+        and authentication is done first and the TLS encryption is
+        done second.  On the decryption side, the TLS decryption is
+        done first and the SRTP/SRTCP decryption is done second.
+      </t>
+      <t>
+        When a media or application m-line is negotiated (in SDP) as
+        using DTLS, a DTLS handshake will be performed regardless of
+        the chosen transport type.  In the case of a TLS transport,
+        the DTLS packets will be sent as TLS payload.  This creates a
+        slightly strange end result of DTLS over TLS but this allows
+        the system as a whole to operate in the same manner regardless
+        of the chosen transport type.
+      </t>
+    </section>      
+
+    <section anchor="parallel-connections" title="Parallel Connections">
+      <t>
+        When using TCP or TLS it is useful to be able to use multiple
+        simultaneous connections to avoid head of line blocking and
+        similar issues associated with TCP sockets.  A server can
+        advertise support for simultaneous connections by advertising
+        the maximum connection count in its ICE candidates:
+
+        <figure>
+          <artwork align="left"><![CDATA[
+          
+          a=candidate:8 1 TCP 1962934271 23.253.251.168 33434 typ host \
+          tcptype passive maxconn 4
+          ]]></artwork>
+        </figure> 
+        The grammar for the maxconn parameter is as follows:
+
+        <figure>
+          <artwork align="left"><![CDATA[
+          
+          extension-att-name = “maxconn”
+          extension-att-value = digit*
+          ]]></artwork>
+        </figure> 
+        If the maxconn parameter is not present then the server does
+        not support parallel connections.
+      </t>
+      <t>
+        A client is allowed to connect to the server up to N times per
+        transport type.  Each connection must perform a successful
+        STUN binding exchange to identify and authenticate the
+        connection on the server.  The server will treat all
+        connections of a given transport type as one ‘logical
+        connection’.  For example, a STUN binding received on one
+        connection with the USE-CANDIDATE flag set will make all
+        connections of that transport type active.
+      </t>
+      <t>
+        When multiple connections of the active transport type are
+        available, the client and server should transmit packets in a
+        round-robin fashion across the connections.
+      </t>      
+
+    </section>
+
+    <section anchor="http-proxy" title="HTTP Proxy">      
+      <t>
+        Some firewalls will block arbitrary UDP, TCP, or TLS traffic,
+        but will allow TLS traffic via an HTTP proxy.  When an HTTP
+        proxy is configured on the client (or host operating system)
+        and TLS ICE candidates have been exchanged between the client
+        and server, then the client should initiate an HTTP CONNECT to
+        the proxy server before sending TLS traffic.
+      </t>
+      <t>
+        The client provides the IP and TLS port of the server to the
+        HTTP proxy (in the form of a generated HTTP URL).  It is quite
+        likely that the TLS port of the server must be 443 (standard
+        HTTPS port) for this operation to work.  After the proxy
+        server returns 200 the client may send the TLS along the
+        established TCP connection with the proxy server and the TLS
+        will be forwarded (intact) to the server.  (There is a wiki
+        page at https://en.wikipedia.org/wiki/HTTP_tunnel, but no
+        real standards to point to). 
+      </t>
+      <t>
+        The use of an HTTP proxy is largely invisible to the server.
+        The server will see the IP address port used by the HTTP proxy
+        instead of the client, but this will be handled normally as
+        part of ICE processing.
+      </t>
+    </section>
+
+    <section anchor="rtcp-mux" title="RTCP Multiplexing">      
+      <t>
+        It is desirable (and in some cases required) that RTCP and RTP
+        be transmitted over the same port.  This behavior is
+        negotiated in SDP as described in Multiplexing RTP and RTCP
+        <xref target="RFC5761"/>.  It is highly recommended that all
+        clients support rtcp-mux.  Clients that do not support
+        rtcp-mux may not be able to use TLS and HTTP proxies for
+        connectivity.
+      </t>
+    </section>
+
+    <section anchor="compability" title="Compatibility">
+      <t>
+        TODO: How will this affect old clients?
+      </t>
+
+    </section>
+
+    <section title="IANA Considerations">
+      <t>
+        SDP?
+      </t>
+    </section>
+    
+    <section anchor="security" title="Security Considerations">
+      <t>
+        The security considerations described in <xref
+        target="I-D.ietf-ice-rfc5245bis"/> are still valid. 
+
+        TODO: ANY TLS attacs we should care about?  TODO: SRTP? Do we
+        need it even if we use TLS, yes probably. (Changing paths and
+        so on?)
+      </t>
+      
+    </section>
+
+    <section anchor="ack" title="Acknowledgements">
+      <t>
+        Authors would like to thank a long list of people...
+      </t>
+    </section>
+    
+  </middle>
+  
+  <back>
+    <references title="Normative References">
+      <?rfc include="reference.I-D.ietf-ice-rfc5245bis"?>
+      <?rfc include="reference.RFC.2119"?>
+      <?rfc include="reference.RFC.4571"?>
+      <?rfc include="reference.RFC.4572"?>
+      <?rfc include="reference.RFC.5761"?>
+      <?rfc include="reference.RFC.6544"?>   
+ </references>
+
+    
+  </back>
+</rfc>
