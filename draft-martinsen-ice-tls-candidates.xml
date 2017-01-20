@@ -47,7 +47,7 @@
 
     <abstract>
       <t>
-        TODO: Write
+        This document introduces TLS candidates to ICE.
       </t>
     </abstract>
   </front>
@@ -87,45 +87,14 @@
 
     <section anchor="overview_of_operations" title="Overview of Operations">
       <t>
-        ICE to performs connectivity checks between clients and
-        servers.  ICE candidates are exchanged via SDP and
-        connectivity checks are performed on each candidate pair.
-        Typically the client implements a full ICE stack and the
-        server implements a ICE lite stack.  The client is in the ICE
-        controlling role, so the client has ultimate control over
-        which candidate pair is selected.  The client controls the
-        candidate selection by setting PRIORITY and USE-CANDIDATE
-        attributes within the STUN binding requests.  This follows the
-        ICE specification with the following exceptions:
+        ICE performs connectivity checks between clients and
+        servers. ICE candidates are usually exchanged via SDP and
+        connectivity checks are performed on each candidate pair.  In
+        the scenario where the client implements a full ICE stack and
+        the server implements a ICE lite stack.  The client is in the
+        ICE controlling role, so the client has ultimate control over
+        which candidate pair is selected.
       </t>
-      <t>
-        <list>
-          <t>
-            If no STUN binding request is received with USE-CANDIDATE
-            set then the STUN binding request with the highest
-            priority is used.
-          </t>
-          <t>
-            If a STUN binding request without USE-CANDIDATE is chosen
-            as the active candidate, then a later STUN binding request
-            with USE-CANDIDATE or with a higher PRIORITY will change
-            the active candidate.
-          </t>
-          <t>
-            If a STUN binding request with USE-CANDIDATE is chosen as
-            the active candidate, then a later STUN binding request
-            with USE-CANDIDATE and a higher PRIORITY will change the
-            active candidate.
-          </t>
-        </list>
-      </t>
-      <t>
-        These exceptions are in place to handle scenarios such as
-        mobile network change, which was handled in the original ICE
-        spec by initiating an ICE restart that we wish to avoid.
-        There are in progress draft documents to address this within
-        IETF as well.
-      </t>  
     </section>
 
     <section anchor="ice-tls-candidates" title="ICE-TLS-Candidates">      
@@ -231,51 +200,6 @@
       </t>
     </section>      
 
-    <section anchor="parallel-connections" title="Parallel Connections">
-      <t>
-        When using TCP or TLS it is useful to be able to use multiple
-        simultaneous connections to avoid head of line blocking and
-        similar issues associated with TCP sockets.  A server can
-        advertise support for simultaneous connections by advertising
-        the maximum connection count in its ICE candidates:
-
-        <figure>
-          <artwork align="left"><![CDATA[
-          
-          a=candidate:8 1 TCP 1962934271 23.253.251.168 33434 typ host \
-          tcptype passive maxconn 4
-          ]]></artwork>
-        </figure> 
-        The grammar for the maxconn parameter is as follows:
-
-        <figure>
-          <artwork align="left"><![CDATA[
-          
-          extension-att-name = “maxconn”
-          extension-att-value = digit*
-          ]]></artwork>
-        </figure> 
-        If the maxconn parameter is not present then the server does
-        not support parallel connections.
-      </t>
-      <t>
-        A client is allowed to connect to the server up to N times per
-        transport type.  Each connection must perform a successful
-        STUN binding exchange to identify and authenticate the
-        connection on the server.  The server will treat all
-        connections of a given transport type as one ‘logical
-        connection’.  For example, a STUN binding received on one
-        connection with the USE-CANDIDATE flag set will make all
-        connections of that transport type active.
-      </t>
-      <t>
-        When multiple connections of the active transport type are
-        available, the client and server should transmit packets in a
-        round-robin fashion across the connections.
-      </t>      
-
-    </section>
-
     <section anchor="http-proxy" title="HTTP Proxy">      
       <t>
         Some firewalls will block arbitrary UDP, TCP, or TLS traffic,
@@ -343,7 +267,6 @@
 
     <section anchor="ack" title="Acknowledgements">
       <t>
-        Authors would like to thank a long list of people...
       </t>
     </section>
     
